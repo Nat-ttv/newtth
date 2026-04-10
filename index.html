@@ -1,197 +1,255 @@
 <!DOCTYPE html>
-<html lang="es">
+<html>
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Alerta Verde AI - Dashboard</title>
-    <style>
-        :root {
-            --bg: #0f172a;
-            --card: #1e293b;
-            --green: #10b981;
-            --yellow: #f59e0b;
-            --red: #ef4444;
-            --text: #f8fafc;
-        }
+<meta charset="UTF-8">
+<title>Alerta Verde AI</title>
 
-        body { 
-            font-family: 'Segoe UI', sans-serif; 
-            background: var(--bg); 
-            color: var(--text); 
-            margin: 0; padding: 20px;
-            display: flex; flex-direction: column; align-items: center;
-        }
+<style>
+body {
+  font-family: Arial;
+  background:#0f172a;
+  color:white;
+  text-align:center;
+}
 
-        .container { width: 100%; max-width: 1000px; text-align: center; }
+input, button {
+  margin:5px;
+  padding:8px;
+  border-radius:5px;
+  border:none;
+}
 
-        .header { margin-bottom: 30px; }
-        .header h1 { font-size: 2.5rem; margin-bottom: 5px; color: var(--green); }
+button {
+  background:green;
+  color:white;
+}
 
-        .form-group {
-            background: var(--card);
-            padding: 20px;
-            border-radius: 15px;
-            display: flex; flex-wrap: wrap; justify-content: center;
-            gap: 10px; margin-bottom: 30px;
-            box-shadow: 0 10px 15px -3px rgba(0,0,0,0.3);
-        }
+/* TARJETAS */
+.card {
+  background:#1e293b;
+  margin:10px;
+  padding:15px;
+  border-radius:10px;
+  width:300px;
+  display:inline-block;
+}
 
-        input {
-            background: #334155; border: 1px solid #475569;
-            color: white; padding: 12px; border-radius: 8px;
-            width: 130px; outline: none;
-        }
+.falla {
+  border:2px solid red;
+  animation: blink 1s infinite;
+}
 
-        button {
-            padding: 12px 25px; border-radius: 8px; border: none;
-            cursor: pointer; font-weight: bold; transition: 0.3s;
-        }
+@keyframes blink {
+  50% { background:#7f1d1d; }
+}
 
-        .btn-add { background: var(--green); color: white; }
-        .btn-run { background: #3b82f6; color: white; }
-        button:hover { filter: brightness(1.2); transform: translateY(-2px); }
+/* SEMÁFORO */
+.semaforo div {
+  width:15px;
+  height:15px;
+  border-radius:50%;
+  display:inline-block;
+  margin:2px;
+}
 
-        #grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-            gap: 20px; width: 100%;
-        }
+/* IMPACTO */
+.impacto {
+  background:#020617;
+  padding:8px;
+  margin-top:10px;
+  border-radius:8px;
+  font-size:14px;
+}
 
-        .card {
-            background: var(--card); padding: 20px; border-radius: 15px;
-            text-align: left; border: 2px solid transparent;
-            transition: 0.3s;
-        }
-
-        .falla { border-color: var(--red); animation: pulse 2s infinite; }
-        @keyframes pulse {
-            0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4); }
-            70% { box-shadow: 0 0 0 15px rgba(239, 68, 68, 0); }
-            100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
-        }
-
-        .semaforo { display: flex; gap: 8px; margin: 15px 0; }
-        .semaforo div { width: 12px; height: 12px; border-radius: 50%; background: #334155; }
-
-        .impact-box {
-            background: rgba(0,0,0,0.2); padding: 12px;
-            border-radius: 10px; margin-top: 15px; font-size: 0.85rem;
-        }
-
-        .stat { display: flex; justify-content: space-between; margin: 4px 0; }
-        .label { color: #94a3b8; }
-    </style>
+</style>
 </head>
+
 <body>
 
-    <div class="container">
-        <div class="header">
-            <h1>🌱 Alerta Verde AI</h1>
-            <p>Monitoreo de Eficiencia Fotovoltaica</p>
-        </div>
+<h2>🌱 Alerta Verde AI</h2>
 
-        <div class="form-group">
-            <input id="id" placeholder="ID Panel">
-            <input id="ubi" placeholder="Ubicación">
-            <input id="temp" type="number" placeholder="Temp °C">
-            <input id="volt" type="number" placeholder="Voltaje V">
-            <input id="eff" type="number" placeholder="Eficiencia %">
-            <button class="btn-add" onclick="add()">+ Agregar</button>
-            <button class="btn-run" onclick="run()">⚡ Analizar</button>
-        </div>
+<!-- LOGIN -->
+<div id="login">
+  <input id="user" placeholder="Usuario">
+  <input id="pass" type="password" placeholder="Contraseña">
+  <br>
+  <button onclick="registrar()">Registrarse</button>
+  <button onclick="login()">Entrar</button>
+</div>
 
-        <div id="grid"></div>
-    </div>
+<!-- APP -->
+<div id="app" style="display:none;">
 
-    <script>
-        let data = [];
+<br>
 
-        function add() {
-            const inputs = {
-                id: document.getElementById("id"),
-                u: document.getElementById("ubi"),
-                t: document.getElementById("temp"),
-                v: document.getElementById("volt"),
-                e: document.getElementById("eff")
-            };
+<input id="id" placeholder="ID del panel">
+<input id="ubi" placeholder="Ubicación">
+<input id="temp" placeholder="Temp °C">
+<input id="volt" placeholder="Voltaje">
+<input id="eff" placeholder="Eficiencia %">
 
-            if (!inputs.id.value || !inputs.u.value) {
-                alert("Por favor rellena ID y Ubicación");
-                return;
-            }
+<br>
 
-            data.push({
-                id: inputs.id.value,
-                u: inputs.u.value,
-                t: Number(inputs.t.value),
-                v: Number(inputs.v.value),
-                e: Number(inputs.e.value)
-            });
+<button onclick="add()">➕ Agregar panel</button>
+<button onclick="run()">🚀 Analizar</button>
 
-            // Feedback y limpieza
-            Object.values(inputs).forEach(i => i.value = "");
-            inputs.id.focus();
-        }
+<div id="grid"></div>
 
-        function run() {
-            const grid = document.getElementById("grid");
-            grid.innerHTML = "";
+</div>
 
-            data.forEach(p => {
-                let status = "Operativo";
-                let color = "green";
-                let msg = "Rendimiento óptimo";
-                let fix = "No requiere acción";
+<script>
 
-                // Análisis Lógico
-                if (p.v === 0) {
-                    status = "Desconectado"; color = "red";
-                    msg = "Sin flujo de corriente"; fix = "Revisar cableado/inversor";
-                } else if (p.t > 60) {
-                    status = "Crítico"; color = "red";
-                    msg = "Sobrecalentamiento"; fix = "Enfriamiento necesario";
-                } else if (p.e < 50) {
-                    status = "Falla"; color = "red";
-                    msg = "Baja eficiencia"; fix = "Limpieza o reemplazo celdas";
-                } else if (p.e < 80) {
-                    status = "Atención"; color = "yellow";
-                    msg = "Rendimiento bajo"; fix = "Mantenimiento preventivo";
-                }
+let data = [];
+let usuario = "";
 
-                // Cálculos IA (Simulados)
-                const co2Saved = (p.e * 0.12).toFixed(2);
-                const savings = (p.v * (p.e/100) * 0.5).toFixed(2);
+// REGISTRO
+function registrar(){
+  let u = user.value;
+  let p = pass.value;
 
-                const card = document.createElement("div");
-                card.className = color === 'red' ? 'card falla' : 'card';
-                
-                card.innerHTML = `
-                    <div style="display:flex; justify-content:space-between">
-                        <strong style="font-size:1.2rem">Panel ${p.id}</strong>
-                        <span style="color:var(--green); font-size:0.8rem">${p.u}</span>
-                    </div>
+  if(!u || !p){
+    alert("Completa usuario y contraseña");
+    return;
+  }
 
-                    <div class="semaforo">
-                        <div style="background:${color==='green'? 'var(--green)' : ''}"></div>
-                        <div style="background:${color==='yellow'? 'var(--yellow)' : ''}"></div>
-                        <div style="background:${color==='red'? 'var(--red)' : ''}"></div>
-                    </div>
+  localStorage.setItem("user_"+u, p);
+  alert("Usuario creado");
+}
 
-                    <div style="margin-bottom:10px">
-                        <p style="margin:0; font-weight:bold; color:${color==='red'?'var(--red)':'white'}">${status}</p>
-                        <p style="margin:5px 0; font-size:0.85rem; opacity:0.8">⚠️ ${msg}</p>
-                        <p style="margin:0; font-size:0.85rem; color:var(--green)">🔧 ${fix}</p>
-                    </div>
+// LOGIN
+function login(){
+  let u = user.value;
+  let p = pass.value;
 
-                    <div class="impact-box">
-                        <div class="stat"><span class="label">CO2 Evitado:</span><span>${co2Saved} kg</span></div>
-                        <div class="stat"><span class="label">Ahorro Est.:</span><span>$${savings}</span></div>
-                        <div class="stat"><span class="label">Salud:</span><span>${p.e}%</span></div>
-                    </div>
-                `;
-                grid.appendChild(card);
-            });
-        }
-    </script>
+  let guardado = localStorage.getItem("user_"+u);
+
+  if(guardado === p){
+    usuario = u;
+
+    document.getElementById("login").style.display="none";
+    document.getElementById("app").style.display="block";
+
+    cargar();
+    run();
+  } else {
+    alert("Datos incorrectos");
+  }
+}
+
+// GUARDAR
+function guardar(){
+  localStorage.setItem("data_"+usuario, JSON.stringify(data));
+}
+
+// CARGAR
+function cargar(){
+  let d = localStorage.getItem("data_"+usuario);
+  if(d){ data = JSON.parse(d); }
+}
+
+// AGREGAR PANEL
+function add(){
+
+  let panel = {
+    id: id.value,
+    u: ubi.value,
+    t: Number(temp.value),
+    v: Number(volt.value),
+    e: Number(eff.value)
+  };
+
+  data.push(panel);
+  guardar();
+
+  alert("Panel agregado");
+}
+
+// ANALIZAR
+function run(){
+
+  let grid = document.getElementById("grid");
+  grid.innerHTML = "";
+
+  data.forEach(p => {
+
+    let estado="Normal";
+    let color="green";
+    let motivo="Funcionamiento correcto";
+    let dano="Ninguno";
+
+    // FALLAS
+    if(p.e < 50){
+      estado="Falla";
+      color="red";
+      motivo="Baja eficiencia energética";
+      dano="Celdas deterioradas";
+    }
+
+    if(p.t > 60){
+      estado="Falla";
+      color="red";
+      motivo="Sobrecalentamiento";
+      dano="Daño térmico";
+    }
+
+    if(p.v < 20){
+      estado="Falla";
+      color="red";
+      motivo="Voltaje bajo";
+      dano="Problema eléctrico";
+    }
+
+    if(p.v == 0){
+      estado="Falla";
+      color="red";
+      motivo="Panel desconectado";
+      dano="Cableado o inversor";
+    }
+
+    if(estado==="Normal" && p.e < 60){
+      color="yellow";
+      motivo="Rendimiento bajo";
+      dano="Posible suciedad";
+    }
+
+    // IMPACTO
+    let energia = Math.random()*10+10;
+    let co2 = energia * 0.5;
+    let clean = estado==="Falla" ? 60 : 100;
+    let ahorro = energia;
+
+    let card = document.createElement("div");
+    card.className = estado==="Falla" ? "card falla" : "card";
+
+    card.innerHTML = `
+      <h3>🔆 Panel ${p.id}</h3>
+      <p>📍 ${p.u}</p>
+
+      <div class="semaforo">
+        <div style="background:${color==='green'?'green':'gray'}"></div>
+        <div style="background:${color==='yellow'?'yellow':'gray'}"></div>
+        <div style="background:${color==='red'?'red':'gray'}"></div>
+      </div>
+
+      <p><b>${estado}</b></p>
+
+      <p>⚠️ Motivo: ${motivo}</p>
+      <p>🔧 Daño: ${dano}</p>
+
+      <div class="impacto">
+        <p>🌱 CO2 evitado: ${co2.toFixed(2)} kg</p>
+        <p>⚡ Energía limpia: ${clean}%</p>
+        <p>💰 Ahorro: ${ahorro.toFixed(2)} kWh</p>
+      </div>
+    `;
+
+    grid.appendChild(card);
+
+  });
+
+}
+
+</script>
+
 </body>
 </html>
