@@ -8,44 +8,96 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 
 <style>
-body {font-family: Arial;background:#0f172a;color:white;text-align:center;}
+body {
+  margin:0;
+  font-family: Arial;
+  background:#0f172a;
+  color:white;
+}
 
-.header {position:absolute;top:10px;left:10px;display:flex;align-items:center;}
-.logo {width:50px;margin-right:10px;}
+/* LOGIN */
+#login {
+  height:100vh;
+  display:flex;
+  justify-content:center;
+  align-items:center;
+}
 
-input, button {margin:5px;padding:8px;border-radius:5px;border:none;}
-button {background:green;color:white;}
+.login-box {
+  background:#1e293b;
+  padding:30px;
+  border-radius:15px;
+  width:300px;
+  text-align:center;
+}
 
-.card {background:#1e293b;margin:10px;padding:15px;border-radius:10px;width:300px;display:inline-block;}
-.falla {border:2px solid red;animation: blink 1s infinite;}
-@keyframes blink {50% { background:#7f1d1d; }}
+input {
+  width:90%;
+  padding:10px;
+  margin:8px 0;
+  border-radius:8px;
+  border:none;
+}
 
-.semaforo div {width:15px;height:15px;border-radius:50%;display:inline-block;margin:2px;}
-.impacto {background:#020617;padding:8px;margin-top:10px;border-radius:8px;}
-.alerta {color:#f87171;font-weight:bold;}
+button {
+  padding:10px;
+  border:none;
+  border-radius:8px;
+  background:#22c55e;
+  color:white;
+  margin:5px;
+  cursor:pointer;
+}
+
+/* APP */
+#app {
+  display:none;
+  text-align:center;
+  padding-top:20px;
+}
+
+.card {
+  background:#1e293b;
+  margin:10px;
+  padding:15px;
+  border-radius:10px;
+  width:280px;
+  display:inline-block;
+}
+
+.falla {
+  border:2px solid red;
+}
+
+.semaforo div {
+  width:15px;
+  height:15px;
+  border-radius:50%;
+  display:inline-block;
+  margin:2px;
+}
 </style>
 </head>
 
 <body>
 
-<div class="header">
-  <img src="logo.png" class="logo">
-  <h2>TuriSolar</h2>
-</div>
-
-<h2>🌱 Sistema Inteligente Solar</h2>
-
 <!-- LOGIN -->
 <div id="login">
-  <input id="user" placeholder="Usuario">
-  <input id="pass" type="password" placeholder="Contraseña">
-  <br>
-  <button onclick="registrar()">Registrarse</button>
-  <button onclick="loginUser()">Entrar</button>
+  <div class="login-box">
+    <h2>🌱 TuriSolar</h2>
+
+    <input id="user" placeholder="Usuario">
+    <input id="pass" type="password" placeholder="Contraseña">
+
+    <button onclick="registrar()">Registrarse</button>
+    <button onclick="loginUser()">Entrar</button>
+
+    <p id="msg"></p>
+  </div>
 </div>
 
 <!-- APP -->
-<div id="app" style="display:none;">
+<div id="app">
 
 <button onclick="logout()">🚪 Salir</button>
 
@@ -60,9 +112,8 @@ button {background:green;color:white;}
 
 <br>
 
-<button onclick="add()">➕ Agregar</button>
+<button onclick="add()">➕ Agregar Panel</button>
 <button onclick="run()">🚀 Analizar</button>
-<button onclick="reporte()">📄 PDF</button>
 
 <div id="grid"></div>
 <canvas id="grafico"></canvas>
@@ -74,178 +125,155 @@ button {background:green;color:white;}
 let data = [];
 let usuario = "";
 
+/* MENSAJE */
+function msg(t,c="white"){
+  let m=document.getElementById("msg");
+  m.innerText=t;
+  m.style.color=c;
+}
+
 /* REGISTRO */
 function registrar(){
-
-  let u = document.getElementById("user").value.trim();
-  let p = document.getElementById("pass").value.trim();
+  let u=user.value.trim();
+  let p=pass.value.trim();
 
   if(!u || !p){
-    alert("Completa usuario y contraseña");
+    msg("Completa campos","orange");
     return;
   }
 
   if(localStorage.getItem("user_"+u)){
-    alert("El usuario ya existe");
+    msg("Usuario ya existe","red");
     return;
   }
 
-  localStorage.setItem("user_"+u, p);
-
-  alert("Usuario registrado correctamente");
-
-  user.value="";
-  pass.value="";
+  localStorage.setItem("user_"+u,p);
+  msg("Usuario creado","lightgreen");
 }
 
 /* LOGIN */
 function loginUser(){
+  let u=user.value.trim();
+  let p=pass.value.trim();
 
-  let u = document.getElementById("user").value.trim();
-  let p = document.getElementById("pass").value.trim();
+  let g=localStorage.getItem("user_"+u);
 
-  let guardado = localStorage.getItem("user_"+u);
+  if(!g){ msg("No existe","red"); return; }
+  if(g!==p){ msg("Contraseña incorrecta","red"); return; }
 
-  if(!guardado){
-    alert("Usuario no existe");
-    return;
-  }
-
-  if(guardado !== p){
-    alert("Contraseña incorrecta");
-    return;
-  }
-
-  usuario = u;
-
-  document.getElementById("login").style.display = "none";
-  document.getElementById("app").style.display = "block";
+  usuario=u;
+  login.style.display="none";
+  app.style.display="block";
 
   cargar();
   run();
-
-  user.value="";
-  pass.value="";
 }
 
 /* LOGOUT */
 function logout(){
   usuario="";
-  document.getElementById("app").style.display="none";
-  document.getElementById("login").style.display="block";
+  app.style.display="none";
+  login.style.display="flex";
 }
 
 /* STORAGE */
 function guardar(){
-  localStorage.setItem("data_"+usuario, JSON.stringify(data));
+  localStorage.setItem("data_"+usuario,JSON.stringify(data));
 }
 
 function cargar(){
-  let d = localStorage.getItem("data_"+usuario);
-  if(d) data = JSON.parse(d);
+  let d=localStorage.getItem("data_"+usuario);
+  if(d) data=JSON.parse(d);
 }
 
-/* AGREGAR */
+/* AGREGAR (ARREGLADO) */
 function add(){
-  data.push({
+
+  if(!id.value || !ubi.value){
+    alert("Completa ID y ubicación");
+    return;
+  }
+
+  let panel={
     id:id.value,
     u:ubi.value,
-    t:Number(temp.value),
-    v:Number(volt.value),
-    e:Number(eff.value),
+    t:Number(temp.value)||0,
+    v:Number(volt.value)||0,
+    e:Number(eff.value)||0,
     f:fecha.value
-  });
+  };
+
+  data.push(panel);
+
   guardar();
+
+  limpiar();
+
+  run(); // 🔥 IMPORTANTE (actualiza pantalla)
 }
 
-/* IA SIMULADA */
-function predecirIA(p){
-
-  let score = 0;
-
-  score += (p.t/100)*0.4;
-  score += ((100-p.e)/100)*0.4;
-  score += ((50-p.v)/50)*0.2;
-
-  let prob = Math.min(Math.max(score*100,0),100);
-
-  let estado="Normal";
-  if(prob>70) estado="Falla crítica";
-  else if(prob>40) estado="Advertencia";
-
-  return {estado,prob:prob.toFixed(1)};
-}
-
-/* EMAIL */
-async function enviarCorreo(panel,motivo){
-  await fetch("https://api.web3forms.com/submit",{
-    method:"POST",
-    headers:{"Content-Type":"application/json"},
-    body:JSON.stringify({
-      access_key:"ee165faa-bc24-4309-a63e-7f5bb7331afb",
-      subject:"🚨 Alerta TuriSolar",
-      message:`Panel ${panel.id} - ${motivo}`
-    })
-  });
+/* LIMPIAR */
+function limpiar(){
+  id.value="";
+  ubi.value="";
+  temp.value="";
+  volt.value="";
+  eff.value="";
+  fecha.value="";
 }
 
 /* EDITAR */
 function editar(i){
   let p=data[i];
+
   id.value=p.id;
   ubi.value=p.u;
   temp.value=p.t;
   volt.value=p.v;
   eff.value=p.e;
   fecha.value=p.f;
+
   data.splice(i,1);
   guardar();
+  run();
+}
+
+/* IA */
+function predecirIA(p){
+  let score=(p.t/100)*0.4 + ((100-p.e)/100)*0.4 + ((50-p.v)/50)*0.2;
+  let prob=Math.min(Math.max(score*100,0),100);
+
+  let estado="Normal";
+  if(prob>70) estado="Falla";
+  else if(prob>40) estado="Advertencia";
+
+  return {estado,prob:prob.toFixed(1)};
 }
 
 /* ANALIZAR */
 function run(){
 
+  let grid=document.getElementById("grid");
   grid.innerHTML="";
+
   let normales=0, fallas=0;
 
   data.forEach((p,i)=>{
 
     let ia=predecirIA(p);
 
-    let estado="Normal", color="green";
+    let color="green";
 
-    if(ia.estado==="Falla crítica"){
-      estado="Falla";
-      color="red";
-      enviarCorreo(p, ia.estado);
-    }
-    else if(ia.estado==="Advertencia"){
-      color="orange";
-    }
-
-    let hoy=new Date();
-    let anos=(hoy-new Date(p.f))/(1000*60*60*24*365);
-
-    let garantia="Vigente";
-    if(anos>15) garantia="Vencida";
-    else if(anos>10) garantia="Por vencer";
-
-    let costo = estado==="Falla"?300:80;
-    let energiaPerdida = estado==="Falla"?25:12;
-    let dineroPerdido = energiaPerdida*0.25;
-
-    let recomendacion = estado==="Falla"
-      ? "Revisión técnica urgente"
-      : "Mantenimiento preventivo";
-
-    if(estado==="Falla") fallas++; else normales++;
+    if(ia.estado==="Falla"){color="red"; fallas++;}
+    else if(ia.estado==="Advertencia"){color="orange"; normales++;}
+    else normales++;
 
     let card=document.createElement("div");
-    card.className=estado==="Falla"?"card falla":"card";
+    card.className=ia.estado==="Falla"?"card falla":"card";
 
     card.innerHTML=`
-      <h3>🔆 Panel ${p.id}</h3>
-      <p>📍 ${p.u}</p>
+      <h3>Panel ${p.id}</h3>
+      <p>${p.u}</p>
 
       <div class="semaforo">
         <div style="background:${color==='green'?'green':'gray'}"></div>
@@ -253,25 +281,12 @@ function run(){
         <div style="background:${color==='red'?'red':'gray'}"></div>
       </div>
 
-      <p><b>${estado}</b></p>
-      <p>🤖 IA: ${ia.estado}</p>
-      <p>📊 Probabilidad: ${ia.prob}%</p>
-
-      <p>📅 ${p.f}</p>
-      <p>🛡️ ${garantia}</p>
-
-      <div class="impacto">
-        <p>💰 Reparación: $${costo}</p>
-        <p>⚡ Energía perdida: ${energiaPerdida} kWh</p>
-        <p>💸 Pérdida: $${dineroPerdido.toFixed(2)}</p>
-        <p>📌 ${recomendacion}</p>
-      </div>
+      <p>${ia.estado} (${ia.prob}%)</p>
 
       <button onclick="editar(${i})">✏️ Editar</button>
     `;
 
     grid.appendChild(card);
-
   });
 
   new Chart(grafico,{
@@ -281,27 +296,6 @@ function run(){
       datasets:[{data:[normales,fallas]}]
     }
   });
-}
-
-/* PDF */
-async function reporte(){
-
-  const {jsPDF}=window.jspdf;
-  let doc=new jsPDF();
-
-  doc.text("Reporte TuriSolar PRO",10,10);
-
-  let y=20;
-
-  data.forEach(p=>{
-    doc.text(`Panel ${p.id}`,10,y); y+=8;
-    doc.text(`Ubicación: ${p.u}`,10,y); y+=8;
-    doc.text(`Costo estimado: $300`,10,y); y+=8;
-    doc.text(`Energía perdida: 25 kWh`,10,y); y+=8;
-    doc.text(`Pérdida: $6`,10,y); y+=12;
-  });
-
-  doc.save("reporte.pdf");
 }
 
 </script>
