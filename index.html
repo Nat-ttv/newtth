@@ -2,7 +2,10 @@
 <html>
 <head>
 <meta charset="UTF-8">
-<title>Alerta Verde AI</title>
+<title>TuriSolar</title>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 
 <style>
 body {
@@ -10,6 +13,23 @@ body {
   background:#0f172a;
   color:white;
   text-align:center;
+}
+
+/* HEADER */
+.header {
+  position:absolute;
+  top:10px;
+  left:10px;
+  display:flex;
+  align-items:center;
+}
+.logo {
+  width:50px;
+  margin-right:10px;
+}
+.header h1 {
+  font-size:20px;
+  color:#22c55e;
 }
 
 input, button {
@@ -61,12 +81,22 @@ button {
   font-size:14px;
 }
 
+.alerta {
+  color:#f87171;
+  font-weight:bold;
+}
 </style>
 </head>
 
 <body>
 
-<h2>🌱 Alerta Verde AI</h2>
+<!-- HEADER -->
+<div class="header">
+  <img src="logo.png" class="logo">
+  <h1>TuriSolar</h1>
+</div>
+
+<h2>🌱 Inteligencia para el Turismo Sostenible</h2>
 
 <!-- LOGIN -->
 <div id="login">
@@ -87,13 +117,17 @@ button {
 <input id="temp" placeholder="Temp °C">
 <input id="volt" placeholder="Voltaje">
 <input id="eff" placeholder="Eficiencia %">
+<input id="fecha" type="date">
 
 <br>
 
 <button onclick="add()">➕ Agregar panel</button>
 <button onclick="run()">🚀 Analizar</button>
+<button onclick="reporte()">📄 Reporte PDF</button>
 
 <div id="grid"></div>
+
+<canvas id="grafico" width="300"></canvas>
 
 </div>
 
@@ -155,7 +189,8 @@ function add(){
     u: ubi.value,
     t: Number(temp.value),
     v: Number(volt.value),
-    e: Number(eff.value)
+    e: Number(eff.value),
+    f: fecha.value
   };
 
   data.push(panel);
@@ -170,6 +205,9 @@ function run(){
   let grid = document.getElementById("grid");
   grid.innerHTML = "";
 
+  let normales = 0;
+  let fallas = 0;
+
   data.forEach(p => {
 
     let estado="Normal";
@@ -177,7 +215,6 @@ function run(){
     let motivo="Funcionamiento correcto";
     let dano="Ninguno";
 
-    // FALLAS
     if(p.e < 50){
       estado="Falla";
       color="red";
@@ -212,14 +249,48 @@ function run(){
       dano="Posible suciedad";
     }
 
+    // GARANTÍA
+    let garantia = "Vigente";
+    let hoy = new Date();
+    let instalacion = new Date(p.f);
+
+    let anos = (hoy - instalacion) / (1000*60*60*24*365);
+
+    if(anos > 15){
+      garantia = "Vencida";
+    } else if(anos > 10){
+      garantia = "Por vencer";
+    }
+
+    // ALERTAS
+    let alerta = "";
+
+    if(estado === "Falla"){
+      alerta = "🚨 Falla crítica";
+    }
+
+    if(garantia === "Por vencer"){
+      alerta += "<br>⚠️ Garantía por vencer";
+    }
+
+    if(garantia === "Vencida"){
+      alerta += "<br>❌ Garantía vencida";
+    }
+
     // IMPACTO
     let energia = Math.random()*10+10;
     let co2 = energia * 0.5;
     let clean = estado==="Falla" ? 60 : 100;
     let ahorro = energia;
 
+    if(estado==="Falla"){ fallas++; } else { normales++; }
+
     let card = document.createElement("div");
     card.className = estado==="Falla" ? "card falla" : "card";
+
+    if(garantia === "Vencida"){
+      card.style.border = "2px solid orange";
+    }
 
     card.innerHTML = `
       <h3>🔆 Panel ${p.id}</h3>
@@ -232,12 +303,16 @@ function run(){
       </div>
 
       <p><b>${estado}</b></p>
+      <p>⚠️ ${motivo}</p>
+      <p>🔧 ${dano}</p>
 
-      <p>⚠️ Motivo: ${motivo}</p>
-      <p>🔧 Daño: ${dano}</p>
+      <p>📅 Instalación: ${p.f}</p>
+      <p>🛡️ ${garantia}</p>
+
+      <p class="alerta">${alerta}</p>
 
       <div class="impacto">
-        <p>🌱 CO2 evitado: ${co2.toFixed(2)} kg</p>
+        <p>🌱 CO2: ${co2.toFixed(2)} kg</p>
         <p>⚡ Energía limpia: ${clean}%</p>
         <p>💰 Ahorro: ${ahorro.toFixed(2)} kWh</p>
       </div>
@@ -247,6 +322,36 @@ function run(){
 
   });
 
+  // GRÁFICA
+  let ctx = document.getElementById("grafico");
+
+  new Chart(ctx, {
+    type: "doughnut",
+    data: {
+      labels: ["Funcionando", "Fallas"],
+      datasets: [{
+        data: [normales, fallas]
+      }]
+    }
+  });
+}
+
+// PDF
+async function reporte(){
+
+  const { jsPDF } = window.jspdf;
+  let doc = new jsPDF();
+
+  doc.text("Reporte TuriSolar", 10, 10);
+
+  let y = 20;
+
+  data.forEach(p => {
+    doc.text(`Panel ${p.id} - ${p.u}`, 10, y);
+    y += 10;
+  });
+
+  doc.save("reporte.pdf");
 }
 
 </script>
