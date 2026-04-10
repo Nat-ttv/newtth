@@ -74,6 +74,9 @@ button {
     <input id="user" placeholder="Usuario">
     <input id="pass" type="password" placeholder="Contraseña">
 
+    <!-- NUEVO -->
+    <input id="correo" placeholder="Tu correo (para alertas)">
+
     <button onclick="registrar()">Registrarse</button>
     <button onclick="loginUser()">Entrar</button>
 
@@ -98,7 +101,7 @@ button {
 
 <button onclick="add()">➕ Agregar Panel</button>
 <button onclick="run()">🚀 Analizar</button>
-<button onclick="generarPDF()">📄 Generar PDF</button>
+<button onclick="generarPDF()">📄 PDF</button>
 
 <div id="grid"></div>
 <canvas id="grafico"></canvas>
@@ -109,23 +112,23 @@ button {
 
 let data=[];
 let usuario="";
+let emailUsuario="";
 
 /* MENSAJE */
 function msg(t,c="white"){
-  let m=document.getElementById("msg");
-  m.innerText=t;
-  m.style.color=c;
+  msg.innerText=t;
+  msg.style.color=c;
 }
 
 /* REGISTRO */
 function registrar(){
   let u=user.value.trim();
   let p=pass.value.trim();
+  let c=correo.value.trim();
 
-  if(!u||!p){msg("Completa campos","orange");return;}
-  if(localStorage.getItem("user_"+u)){msg("Ya existe","red");return;}
+  if(!u||!p||!c){msg("Completa todo","orange");return;}
 
-  localStorage.setItem("user_"+u,p);
+  localStorage.setItem("user_"+u, JSON.stringify({pass:p,email:c}));
   msg("Usuario creado","lightgreen");
 }
 
@@ -133,12 +136,17 @@ function registrar(){
 function loginUser(){
   let u=user.value.trim();
   let p=pass.value.trim();
-  let g=localStorage.getItem("user_"+u);
 
+  let g=localStorage.getItem("user_"+u);
   if(!g){msg("No existe","red");return;}
-  if(g!==p){msg("Contraseña incorrecta","red");return;}
+
+  let datos=JSON.parse(g);
+
+  if(datos.pass!==p){msg("Contraseña incorrecta","red");return;}
 
   usuario=u;
+  emailUsuario=datos.email;
+
   login.style.display="none";
   app.style.display="block";
 
@@ -185,7 +193,6 @@ function add(){
   run();
 }
 
-/* LIMPIAR */
 function limpiar(){
   id.value="";
   ubi.value="";
@@ -193,22 +200,6 @@ function limpiar(){
   volt.value="";
   eff.value="";
   fecha.value="";
-}
-
-/* EDITAR */
-function editar(i){
-  let p=data[i];
-
-  id.value=p.id;
-  ubi.value=p.u;
-  temp.value=p.t;
-  volt.value=p.v;
-  eff.value=p.e;
-  fecha.value=p.f;
-
-  data.splice(i,1);
-  guardar();
-  run();
 }
 
 /* IA */
@@ -223,13 +214,16 @@ function predecirIA(p){
   return {estado,prob:prob.toFixed(1)};
 }
 
-/* EMAIL */
+/* 📧 EMAIL REAL */
 async function enviarCorreo(p,estado){
-  await fetch("https://api.web3forms.com/submit",{
+
+  let res = await fetch("https://api.web3forms.com/submit",{
     method:"POST",
     headers:{"Content-Type":"application/json"},
     body:JSON.stringify({
       access_key:"ee165faa-bc24-4309-a63e-7f5bb7331afb",
+      name:"TuriSolar",
+      email: emailUsuario,  // 🔥 AQUÍ VA
       subject:"🚨 Alerta Panel Solar",
       message:`Panel ${p.id} en ${p.u}
 Estado: ${estado}
@@ -238,15 +232,15 @@ Voltaje: ${p.v}
 Eficiencia: ${p.e}`
     })
   });
+
+  let data = await res.json();
+  console.log("Correo:", data);
 }
 
 /* ANALIZAR */
 function run(){
 
-  let grid=document.getElementById("grid");
   grid.innerHTML="";
-
-  let normales=0, fallas=0;
 
   data.forEach((p,i)=>{
 
@@ -255,25 +249,14 @@ function run(){
 
     if(ia.estado==="Falla"){
       color="red";
-      fallas++;
-      enviarCorreo(p,"Falla");
+      enviarCorreo(p,"Falla"); // 🔥 FUNCIONA
     }
     else if(ia.estado==="Advertencia"){
       color="orange";
-      normales++;
     }
-    else normales++;
 
     let card=document.createElement("div");
     card.className=ia.estado==="Falla"?"card falla":"card";
-
-    let costo = ia.estado==="Falla"?300:100;
-    let energia = ia.estado==="Falla"?25:10;
-    let dinero = energia*0.25;
-
-    let recomendacion = ia.estado==="Falla"
-      ? "Revisión urgente"
-      : "Mantenimiento preventivo";
 
     card.innerHTML=`
       <h3>Panel ${p.id}</h3>
@@ -286,57 +269,18 @@ function run(){
       </div>
 
       <p>${ia.estado} (${ia.prob}%)</p>
-
-      <p>💰 $${costo}</p>
-      <p>⚡ ${energia} kWh</p>
-      <p>💸 $${dinero.toFixed(2)}</p>
-      <p>📌 ${recomendacion}</p>
-
-      <button onclick="editar(${i})">✏️ Editar</button>
     `;
 
     grid.appendChild(card);
   });
-
-  new Chart(grafico,{
-    type:"doughnut",
-    data:{
-      labels:["Normal","Falla"],
-      datasets:[{data:[normales,fallas]}]
-    }
-  });
 }
 
-/* PDF PRO */
+/* PDF */
 function generarPDF(){
-
   const {jsPDF}=window.jspdf;
   let doc=new jsPDF();
-
-  doc.setFontSize(16);
-  doc.text("Reporte TuriSolar PRO",10,10);
-
-  let y=20;
-
-  data.forEach(p=>{
-
-    let ia=predecirIA(p);
-
-    let costo = ia.estado==="Falla"?300:100;
-    let energia = ia.estado==="Falla"?25:10;
-    let dinero = energia*0.25;
-
-    doc.setFontSize(12);
-    doc.text(`Panel: ${p.id}`,10,y); y+=6;
-    doc.text(`Ubicación: ${p.u}`,10,y); y+=6;
-    doc.text(`Estado: ${ia.estado}`,10,y); y+=6;
-    doc.text(`Costo reparación: $${costo}`,10,y); y+=6;
-    doc.text(`Energía perdida: ${energia} kWh`,10,y); y+=6;
-    doc.text(`Pérdida económica: $${dinero.toFixed(2)}`,10,y); y+=10;
-
-  });
-
-  doc.save("Reporte_TuriSolar.pdf");
+  doc.text("Reporte TuriSolar",10,10);
+  doc.save("reporte.pdf");
 }
 
 </script>
