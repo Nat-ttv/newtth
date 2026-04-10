@@ -35,14 +35,16 @@ button {background:green;color:white;}
 
 <h2>🌱 Sistema Inteligente Solar</h2>
 
+<!-- LOGIN -->
 <div id="login">
   <input id="user" placeholder="Usuario">
-  <input id="pass" type="password">
+  <input id="pass" type="password" placeholder="Contraseña">
   <br>
   <button onclick="registrar()">Registrarse</button>
-  <button onclick="login()">Entrar</button>
+  <button onclick="loginUser()">Entrar</button>
 </div>
 
+<!-- APP -->
 <div id="app" style="display:none;">
 
 <button onclick="logout()">🚪 Salir</button>
@@ -69,36 +71,78 @@ button {background:green;color:white;}
 
 <script>
 
-let data=[], usuario="";
+let data = [];
+let usuario = "";
+
+/* REGISTRO */
+function registrar(){
+
+  let u = document.getElementById("user").value.trim();
+  let p = document.getElementById("pass").value.trim();
+
+  if(!u || !p){
+    alert("Completa usuario y contraseña");
+    return;
+  }
+
+  if(localStorage.getItem("user_"+u)){
+    alert("El usuario ya existe");
+    return;
+  }
+
+  localStorage.setItem("user_"+u, p);
+
+  alert("Usuario registrado correctamente");
+
+  user.value="";
+  pass.value="";
+}
 
 /* LOGIN */
-function registrar(){
-  localStorage.setItem("user_"+user.value, pass.value);
-  alert("Usuario creado");
+function loginUser(){
+
+  let u = document.getElementById("user").value.trim();
+  let p = document.getElementById("pass").value.trim();
+
+  let guardado = localStorage.getItem("user_"+u);
+
+  if(!guardado){
+    alert("Usuario no existe");
+    return;
+  }
+
+  if(guardado !== p){
+    alert("Contraseña incorrecta");
+    return;
+  }
+
+  usuario = u;
+
+  document.getElementById("login").style.display = "none";
+  document.getElementById("app").style.display = "block";
+
+  cargar();
+  run();
+
+  user.value="";
+  pass.value="";
 }
 
-function login(){
-  if(localStorage.getItem("user_"+user.value)===pass.value){
-    usuario=user.value;
-    login.style.display="none";
-    app.style.display="block";
-    cargar(); run();
-  } else alert("Error");
-}
-
+/* LOGOUT */
 function logout(){
   usuario="";
-  app.style.display="none";
-  login.style.display="block";
+  document.getElementById("app").style.display="none";
+  document.getElementById("login").style.display="block";
 }
 
+/* STORAGE */
 function guardar(){
   localStorage.setItem("data_"+usuario, JSON.stringify(data));
 }
 
 function cargar(){
-  let d=localStorage.getItem("data_"+usuario);
-  if(d) data=JSON.parse(d);
+  let d = localStorage.getItem("data_"+usuario);
+  if(d) data = JSON.parse(d);
 }
 
 /* AGREGAR */
@@ -114,24 +158,22 @@ function add(){
   guardar();
 }
 
-/* IA SIMULADA MEJORADA */
+/* IA SIMULADA */
 function predecirIA(p){
 
   let score = 0;
 
-  // similar a modelo entrenado
-  score += (p.t / 100) * 0.4;   // peso temperatura
-  score += ((100 - p.e)/100) * 0.4; // peso eficiencia inversa
-  score += ((50 - p.v)/50) * 0.2; // peso voltaje
+  score += (p.t/100)*0.4;
+  score += ((100-p.e)/100)*0.4;
+  score += ((50-p.v)/50)*0.2;
 
-  let prob = Math.min(Math.max(score * 100, 0), 100);
+  let prob = Math.min(Math.max(score*100,0),100);
 
-  let estado = "Normal";
+  let estado="Normal";
+  if(prob>70) estado="Falla crítica";
+  else if(prob>40) estado="Advertencia";
 
-  if(prob > 70) estado = "Falla crítica";
-  else if(prob > 40) estado = "Advertencia";
-
-  return {estado, prob: prob.toFixed(1)};
+  return {estado,prob:prob.toFixed(1)};
 }
 
 /* EMAIL */
@@ -142,7 +184,7 @@ async function enviarCorreo(panel,motivo){
     body:JSON.stringify({
       access_key:"ee165faa-bc24-4309-a63e-7f5bb7331afb",
       subject:"🚨 Alerta TuriSolar",
-      message:`Panel ${panel.id} (${panel.u}) - ${motivo}`
+      message:`Panel ${panel.id} - ${motivo}`
     })
   });
 }
@@ -241,7 +283,7 @@ function run(){
   });
 }
 
-/* PDF PRO */
+/* PDF */
 async function reporte(){
 
   const {jsPDF}=window.jspdf;
@@ -254,7 +296,7 @@ async function reporte(){
   data.forEach(p=>{
     doc.text(`Panel ${p.id}`,10,y); y+=8;
     doc.text(`Ubicación: ${p.u}`,10,y); y+=8;
-    doc.text(`Reparación: $300`,10,y); y+=8;
+    doc.text(`Costo estimado: $300`,10,y); y+=8;
     doc.text(`Energía perdida: 25 kWh`,10,y); y+=8;
     doc.text(`Pérdida: $6`,10,y); y+=12;
   });
