@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Alerta Verde AI - Dashboard</title>
+    <style>
+        :root {
+            --bg: #0f172a;
+            --card: #1e293b;
+            --green: #10b981;
+            --yellow: #f59e0b;
+            --red: #ef4444;
+            --text: #f8fafc;
+        }
+
+        body { 
+            font-family: 'Segoe UI', sans-serif; 
+            background: var(--bg); 
+            color: var(--text); 
+            margin: 0; padding: 20px;
+            display: flex; flex-direction: column; align-items: center;
+        }
+
+        .container { width: 100%; max-width: 1000px; text-align: center; }
+
+        .header { margin-bottom: 30px; }
+        .header h1 { font-size: 2.5rem; margin-bottom: 5px; color: var(--green); }
+
+        .form-group {
+            background: var(--card);
+            padding: 20px;
+            border-radius: 15px;
+            display: flex; flex-wrap: wrap; justify-content: center;
+            gap: 10px; margin-bottom: 30px;
+            box-shadow: 0 10px 15px -3px rgba(0,0,0,0.3);
+        }
+
+        input {
+            background: #334155; border: 1px solid #475569;
+            color: white; padding: 12px; border-radius: 8px;
+            width: 130px; outline: none;
+        }
+
+        button {
+            padding: 12px 25px; border-radius: 8px; border: none;
+            cursor: pointer; font-weight: bold; transition: 0.3s;
+        }
+
+        .btn-add { background: var(--green); color: white; }
+        .btn-run { background: #3b82f6; color: white; }
+        button:hover { filter: brightness(1.2); transform: translateY(-2px); }
+
+        #grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 20px; width: 100%;
+        }
+
+        .card {
+            background: var(--card); padding: 20px; border-radius: 15px;
+            text-align: left; border: 2px solid transparent;
+            transition: 0.3s;
+        }
+
+        .falla { border-color: var(--red); animation: pulse 2s infinite; }
+        @keyframes pulse {
+            0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4); }
+            70% { box-shadow: 0 0 0 15px rgba(239, 68, 68, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
+        }
+
+        .semaforo { display: flex; gap: 8px; margin: 15px 0; }
+        .semaforo div { width: 12px; height: 12px; border-radius: 50%; background: #334155; }
+
+        .impact-box {
+            background: rgba(0,0,0,0.2); padding: 12px;
+            border-radius: 10px; margin-top: 15px; font-size: 0.85rem;
+        }
+
+        .stat { display: flex; justify-content: space-between; margin: 4px 0; }
+        .label { color: #94a3b8; }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <div class="header">
+            <h1>🌱 Alerta Verde AI</h1>
+            <p>Monitoreo de Eficiencia Fotovoltaica</p>
+        </div>
+
+        <div class="form-group">
+            <input id="id" placeholder="ID Panel">
+            <input id="ubi" placeholder="Ubicación">
+            <input id="temp" type="number" placeholder="Temp °C">
+            <input id="volt" type="number" placeholder="Voltaje V">
+            <input id="eff" type="number" placeholder="Eficiencia %">
+            <button class="btn-add" onclick="add()">+ Agregar</button>
+            <button class="btn-run" onclick="run()">⚡ Analizar</button>
+        </div>
+
+        <div id="grid"></div>
+    </div>
+
+    <script>
+        let data = [];
+
+        function add() {
+            const inputs = {
+                id: document.getElementById("id"),
+                u: document.getElementById("ubi"),
+                t: document.getElementById("temp"),
+                v: document.getElementById("volt"),
+                e: document.getElementById("eff")
+            };
+
+            if (!inputs.id.value || !inputs.u.value) {
+                alert("Por favor rellena ID y Ubicación");
+                return;
+            }
+
+            data.push({
+                id: inputs.id.value,
+                u: inputs.u.value,
+                t: Number(inputs.t.value),
+                v: Number(inputs.v.value),
+                e: Number(inputs.e.value)
+            });
+
+            // Feedback y limpieza
+            Object.values(inputs).forEach(i => i.value = "");
+            inputs.id.focus();
+        }
+
+        function run() {
+            const grid = document.getElementById("grid");
+            grid.innerHTML = "";
+
+            data.forEach(p => {
+                let status = "Operativo";
+                let color = "green";
+                let msg = "Rendimiento óptimo";
+                let fix = "No requiere acción";
+
+                // Análisis Lógico
+                if (p.v === 0) {
+                    status = "Desconectado"; color = "red";
+                    msg = "Sin flujo de corriente"; fix = "Revisar cableado/inversor";
+                } else if (p.t > 60) {
+                    status = "Crítico"; color = "red";
+                    msg = "Sobrecalentamiento"; fix = "Enfriamiento necesario";
+                } else if (p.e < 50) {
+                    status = "Falla"; color = "red";
+                    msg = "Baja eficiencia"; fix = "Limpieza o reemplazo celdas";
+                } else if (p.e < 80) {
+                    status = "Atención"; color = "yellow";
+                    msg = "Rendimiento bajo"; fix = "Mantenimiento preventivo";
+                }
+
+                // Cálculos IA (Simulados)
+                const co2Saved = (p.e * 0.12).toFixed(2);
+                const savings = (p.v * (p.e/100) * 0.5).toFixed(2);
+
+                const card = document.createElement("div");
+                card.className = color === 'red' ? 'card falla' : 'card';
+                
+                card.innerHTML = `
+                    <div style="display:flex; justify-content:space-between">
+                        <strong style="font-size:1.2rem">Panel ${p.id}</strong>
+                        <span style="color:var(--green); font-size:0.8rem">${p.u}</span>
+                    </div>
+
+                    <div class="semaforo">
+                        <div style="background:${color==='green'? 'var(--green)' : ''}"></div>
+                        <div style="background:${color==='yellow'? 'var(--yellow)' : ''}"></div>
+                        <div style="background:${color==='red'? 'var(--red)' : ''}"></div>
+                    </div>
+
+                    <div style="margin-bottom:10px">
+                        <p style="margin:0; font-weight:bold; color:${color==='red'?'var(--red)':'white'}">${status}</p>
+                        <p style="margin:5px 0; font-size:0.85rem; opacity:0.8">⚠️ ${msg}</p>
+                        <p style="margin:0; font-size:0.85rem; color:var(--green)">🔧 ${fix}</p>
+                    </div>
+
+                    <div class="impact-box">
+                        <div class="stat"><span class="label">CO2 Evitado:</span><span>${co2Saved} kg</span></div>
+                        <div class="stat"><span class="label">Ahorro Est.:</span><span>$${savings}</span></div>
+                        <div class="stat"><span class="label">Salud:</span><span>${p.e}%</span></div>
+                    </div>
+                `;
+                grid.appendChild(card);
+            });
+        }
+    </script>
+</body>
+</html>
