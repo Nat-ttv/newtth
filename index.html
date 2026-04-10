@@ -2,353 +2,261 @@
 <html>
 <head>
 <meta charset="UTF-8">
-<title>TuriSolar</title>
+<title>TuriSolar PRO</title>
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 
 <style>
-body {
-  font-family: Arial;
-  background:#0f172a;
-  color:white;
-  text-align:center;
-}
+body {font-family: Arial;background:#0f172a;color:white;text-align:center;}
 
-/* HEADER */
-.header {
-  position:absolute;
-  top:10px;
-  left:10px;
-  display:flex;
-  align-items:center;
-}
-.logo {
-  width:50px;
-  margin-right:10px;
-}
-.header h1 {
-  font-size:20px;
-  color:#22c55e;
-}
+.header {position:absolute;top:10px;left:10px;display:flex;align-items:center;}
+.logo {width:50px;margin-right:10px;}
 
-input, button {
-  margin:5px;
-  padding:8px;
-  border-radius:5px;
-  border:none;
-}
+input, button {margin:5px;padding:8px;border-radius:5px;border:none;}
+button {background:green;color:white;}
 
-button {
-  background:green;
-  color:white;
-}
+.card {background:#1e293b;margin:10px;padding:15px;border-radius:10px;width:300px;display:inline-block;}
+.falla {border:2px solid red;animation: blink 1s infinite;}
+@keyframes blink {50% { background:#7f1d1d; }}
 
-/* TARJETAS */
-.card {
-  background:#1e293b;
-  margin:10px;
-  padding:15px;
-  border-radius:10px;
-  width:300px;
-  display:inline-block;
-}
-
-.falla {
-  border:2px solid red;
-  animation: blink 1s infinite;
-}
-
-@keyframes blink {
-  50% { background:#7f1d1d; }
-}
-
-/* SEMÁFORO */
-.semaforo div {
-  width:15px;
-  height:15px;
-  border-radius:50%;
-  display:inline-block;
-  margin:2px;
-}
-
-/* IMPACTO */
-.impacto {
-  background:#020617;
-  padding:8px;
-  margin-top:10px;
-  border-radius:8px;
-  font-size:14px;
-}
-
-.alerta {
-  color:#f87171;
-  font-weight:bold;
-}
+.semaforo div {width:15px;height:15px;border-radius:50%;display:inline-block;margin:2px;}
+.impacto {background:#020617;padding:8px;margin-top:10px;border-radius:8px;}
+.alerta {color:#f87171;font-weight:bold;}
 </style>
 </head>
 
 <body>
 
-<!-- HEADER -->
 <div class="header">
   <img src="logo.png" class="logo">
-  <h1>TuriSolar</h1>
+  <h2>TuriSolar</h2>
 </div>
 
-<h2>🌱 Inteligencia para el Turismo Sostenible</h2>
+<h2>🌱 Sistema Inteligente Solar</h2>
 
-<!-- LOGIN -->
 <div id="login">
   <input id="user" placeholder="Usuario">
-  <input id="pass" type="password" placeholder="Contraseña">
+  <input id="pass" type="password">
   <br>
   <button onclick="registrar()">Registrarse</button>
   <button onclick="login()">Entrar</button>
 </div>
 
-<!-- APP -->
 <div id="app" style="display:none;">
+
+<button onclick="logout()">🚪 Salir</button>
 
 <br>
 
-<input id="id" placeholder="ID del panel">
+<input id="id" placeholder="ID">
 <input id="ubi" placeholder="Ubicación">
-<input id="temp" placeholder="Temp °C">
+<input id="temp" placeholder="Temp">
 <input id="volt" placeholder="Voltaje">
-<input id="eff" placeholder="Eficiencia %">
+<input id="eff" placeholder="Eficiencia">
 <input id="fecha" type="date">
 
 <br>
 
-<button onclick="add()">➕ Agregar panel</button>
+<button onclick="add()">➕ Agregar</button>
 <button onclick="run()">🚀 Analizar</button>
-<button onclick="reporte()">📄 Reporte PDF</button>
+<button onclick="reporte()">📄 PDF</button>
 
 <div id="grid"></div>
-
-<canvas id="grafico" width="300"></canvas>
+<canvas id="grafico"></canvas>
 
 </div>
 
 <script>
 
-let data = [];
-let usuario = "";
+let data=[], usuario="";
 
-// REGISTRO
+/* LOGIN */
 function registrar(){
-  let u = user.value;
-  let p = pass.value;
-
-  if(!u || !p){
-    alert("Completa usuario y contraseña");
-    return;
-  }
-
-  localStorage.setItem("user_"+u, p);
+  localStorage.setItem("user_"+user.value, pass.value);
   alert("Usuario creado");
 }
 
-// LOGIN
 function login(){
-  let u = user.value;
-  let p = pass.value;
-
-  let guardado = localStorage.getItem("user_"+u);
-
-  if(guardado === p){
-    usuario = u;
-
-    document.getElementById("login").style.display="none";
-    document.getElementById("app").style.display="block";
-
-    cargar();
-    run();
-  } else {
-    alert("Datos incorrectos");
-  }
+  if(localStorage.getItem("user_"+user.value)===pass.value){
+    usuario=user.value;
+    login.style.display="none";
+    app.style.display="block";
+    cargar(); run();
+  } else alert("Error");
 }
 
-// GUARDAR
+function logout(){
+  usuario="";
+  app.style.display="none";
+  login.style.display="block";
+}
+
 function guardar(){
   localStorage.setItem("data_"+usuario, JSON.stringify(data));
 }
 
-// CARGAR
 function cargar(){
-  let d = localStorage.getItem("data_"+usuario);
-  if(d){ data = JSON.parse(d); }
+  let d=localStorage.getItem("data_"+usuario);
+  if(d) data=JSON.parse(d);
 }
 
-// AGREGAR PANEL
+/* AGREGAR */
 function add(){
-
-  let panel = {
-    id: id.value,
-    u: ubi.value,
-    t: Number(temp.value),
-    v: Number(volt.value),
-    e: Number(eff.value),
-    f: fecha.value
-  };
-
-  data.push(panel);
+  data.push({
+    id:id.value,
+    u:ubi.value,
+    t:Number(temp.value),
+    v:Number(volt.value),
+    e:Number(eff.value),
+    f:fecha.value
+  });
   guardar();
-
-  alert("Panel agregado");
 }
 
-// ANALIZAR
+/* IA SIMULADA MEJORADA */
+function predecirIA(p){
+
+  let score = 0;
+
+  // similar a modelo entrenado
+  score += (p.t / 100) * 0.4;   // peso temperatura
+  score += ((100 - p.e)/100) * 0.4; // peso eficiencia inversa
+  score += ((50 - p.v)/50) * 0.2; // peso voltaje
+
+  let prob = Math.min(Math.max(score * 100, 0), 100);
+
+  let estado = "Normal";
+
+  if(prob > 70) estado = "Falla crítica";
+  else if(prob > 40) estado = "Advertencia";
+
+  return {estado, prob: prob.toFixed(1)};
+}
+
+/* EMAIL */
+async function enviarCorreo(panel,motivo){
+  await fetch("https://api.web3forms.com/submit",{
+    method:"POST",
+    headers:{"Content-Type":"application/json"},
+    body:JSON.stringify({
+      access_key:"ee165faa-bc24-4309-a63e-7f5bb7331afb",
+      subject:"🚨 Alerta TuriSolar",
+      message:`Panel ${panel.id} (${panel.u}) - ${motivo}`
+    })
+  });
+}
+
+/* EDITAR */
+function editar(i){
+  let p=data[i];
+  id.value=p.id;
+  ubi.value=p.u;
+  temp.value=p.t;
+  volt.value=p.v;
+  eff.value=p.e;
+  fecha.value=p.f;
+  data.splice(i,1);
+  guardar();
+}
+
+/* ANALIZAR */
 function run(){
 
-  let grid = document.getElementById("grid");
-  grid.innerHTML = "";
+  grid.innerHTML="";
+  let normales=0, fallas=0;
 
-  let normales = 0;
-  let fallas = 0;
+  data.forEach((p,i)=>{
 
-  data.forEach(p => {
+    let ia=predecirIA(p);
 
-    let estado="Normal";
-    let color="green";
-    let motivo="Funcionamiento correcto";
-    let dano="Ninguno";
+    let estado="Normal", color="green";
 
-    if(p.e < 50){
+    if(ia.estado==="Falla crítica"){
       estado="Falla";
       color="red";
-      motivo="Baja eficiencia energética";
-      dano="Celdas deterioradas";
+      enviarCorreo(p, ia.estado);
+    }
+    else if(ia.estado==="Advertencia"){
+      color="orange";
     }
 
-    if(p.t > 60){
-      estado="Falla";
-      color="red";
-      motivo="Sobrecalentamiento";
-      dano="Daño térmico";
-    }
+    let hoy=new Date();
+    let anos=(hoy-new Date(p.f))/(1000*60*60*24*365);
 
-    if(p.v < 20){
-      estado="Falla";
-      color="red";
-      motivo="Voltaje bajo";
-      dano="Problema eléctrico";
-    }
+    let garantia="Vigente";
+    if(anos>15) garantia="Vencida";
+    else if(anos>10) garantia="Por vencer";
 
-    if(p.v == 0){
-      estado="Falla";
-      color="red";
-      motivo="Panel desconectado";
-      dano="Cableado o inversor";
-    }
+    let costo = estado==="Falla"?300:80;
+    let energiaPerdida = estado==="Falla"?25:12;
+    let dineroPerdido = energiaPerdida*0.25;
 
-    if(estado==="Normal" && p.e < 60){
-      color="yellow";
-      motivo="Rendimiento bajo";
-      dano="Posible suciedad";
-    }
+    let recomendacion = estado==="Falla"
+      ? "Revisión técnica urgente"
+      : "Mantenimiento preventivo";
 
-    // GARANTÍA
-    let garantia = "Vigente";
-    let hoy = new Date();
-    let instalacion = new Date(p.f);
+    if(estado==="Falla") fallas++; else normales++;
 
-    let anos = (hoy - instalacion) / (1000*60*60*24*365);
+    let card=document.createElement("div");
+    card.className=estado==="Falla"?"card falla":"card";
 
-    if(anos > 15){
-      garantia = "Vencida";
-    } else if(anos > 10){
-      garantia = "Por vencer";
-    }
-
-    // ALERTAS
-    let alerta = "";
-
-    if(estado === "Falla"){
-      alerta = "🚨 Falla crítica";
-    }
-
-    if(garantia === "Por vencer"){
-      alerta += "<br>⚠️ Garantía por vencer";
-    }
-
-    if(garantia === "Vencida"){
-      alerta += "<br>❌ Garantía vencida";
-    }
-
-    // IMPACTO
-    let energia = Math.random()*10+10;
-    let co2 = energia * 0.5;
-    let clean = estado==="Falla" ? 60 : 100;
-    let ahorro = energia;
-
-    if(estado==="Falla"){ fallas++; } else { normales++; }
-
-    let card = document.createElement("div");
-    card.className = estado==="Falla" ? "card falla" : "card";
-
-    if(garantia === "Vencida"){
-      card.style.border = "2px solid orange";
-    }
-
-    card.innerHTML = `
+    card.innerHTML=`
       <h3>🔆 Panel ${p.id}</h3>
       <p>📍 ${p.u}</p>
 
       <div class="semaforo">
         <div style="background:${color==='green'?'green':'gray'}"></div>
-        <div style="background:${color==='yellow'?'yellow':'gray'}"></div>
+        <div style="background:${color==='orange'?'orange':'gray'}"></div>
         <div style="background:${color==='red'?'red':'gray'}"></div>
       </div>
 
       <p><b>${estado}</b></p>
-      <p>⚠️ ${motivo}</p>
-      <p>🔧 ${dano}</p>
+      <p>🤖 IA: ${ia.estado}</p>
+      <p>📊 Probabilidad: ${ia.prob}%</p>
 
-      <p>📅 Instalación: ${p.f}</p>
+      <p>📅 ${p.f}</p>
       <p>🛡️ ${garantia}</p>
 
-      <p class="alerta">${alerta}</p>
-
       <div class="impacto">
-        <p>🌱 CO2: ${co2.toFixed(2)} kg</p>
-        <p>⚡ Energía limpia: ${clean}%</p>
-        <p>💰 Ahorro: ${ahorro.toFixed(2)} kWh</p>
+        <p>💰 Reparación: $${costo}</p>
+        <p>⚡ Energía perdida: ${energiaPerdida} kWh</p>
+        <p>💸 Pérdida: $${dineroPerdido.toFixed(2)}</p>
+        <p>📌 ${recomendacion}</p>
       </div>
+
+      <button onclick="editar(${i})">✏️ Editar</button>
     `;
 
     grid.appendChild(card);
 
   });
 
-  // GRÁFICA
-  let ctx = document.getElementById("grafico");
-
-  new Chart(ctx, {
-    type: "doughnut",
-    data: {
-      labels: ["Funcionando", "Fallas"],
-      datasets: [{
-        data: [normales, fallas]
-      }]
+  new Chart(grafico,{
+    type:"doughnut",
+    data:{
+      labels:["Normal","Falla"],
+      datasets:[{data:[normales,fallas]}]
     }
   });
 }
 
-// PDF
+/* PDF PRO */
 async function reporte(){
 
-  const { jsPDF } = window.jspdf;
-  let doc = new jsPDF();
+  const {jsPDF}=window.jspdf;
+  let doc=new jsPDF();
 
-  doc.text("Reporte TuriSolar", 10, 10);
+  doc.text("Reporte TuriSolar PRO",10,10);
 
-  let y = 20;
+  let y=20;
 
-  data.forEach(p => {
-    doc.text(`Panel ${p.id} - ${p.u}`, 10, y);
-    y += 10;
+  data.forEach(p=>{
+    doc.text(`Panel ${p.id}`,10,y); y+=8;
+    doc.text(`Ubicación: ${p.u}`,10,y); y+=8;
+    doc.text(`Reparación: $300`,10,y); y+=8;
+    doc.text(`Energía perdida: 25 kWh`,10,y); y+=8;
+    doc.text(`Pérdida: $6`,10,y); y+=12;
   });
 
   doc.save("reporte.pdf");
